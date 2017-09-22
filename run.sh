@@ -45,8 +45,15 @@ if [ -n "${PRE_CREATE_DB}" ]; then
         else
           for x in $arr
           do
-              echo "=> Creating database: ${x}"
-              influx -host=${INFLUX_HOST} -port=${INFLUX_API_PORT} -execute="create database \"${x}\""
+              IFS=':' read -a db <<< "${x}"
+              echo "=> Creating database: ${db[0]} from \"${x}\""
+              influx -host=${INFLUX_HOST} -port=${INFLUX_API_PORT} -execute="create database \"${db[0]}\""
+              if [ ${#db[@]} -eq 4 ]; then
+                  cmd="create retention policy \"${db[1]}\" on \"${db[0]}\" duration ${db[2]} replication 1 ${db[3]}"
+                  echo "=> Creating Retention: $cmd"
+                  influx -host=${INFLUX_HOST} -port=${INFLUX_API_PORT} -execute="$cmd"
+             fi
+
           done
         fi
 
